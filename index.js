@@ -1,28 +1,52 @@
 const express = require('express');
-const cors = require('cors'); // 1. Import the cors package
+const cors = require('cors');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 const app = express();
-
-// 2. Use CORS middleware so your HTML file/Android app can talk to the server
-app.use(cors()); 
-
-// 3. Optional: Parse JSON bodies (useful for Gemini prompts later)
+app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000; 
+// 1. Initialize Gemini (Use Environment Variable on Render!)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY || "K87645146688957");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-app.get('/', (req, res) => {
-    res.send('Gemini Game Server is Live on Render!');
+const SYSTEM_INSTRUCTION = `You are Elon Musk, CEO of SpaceX, Tesla, and X. 
+1. Persona: Visionary, intense, engineering-focused, and obsessed with First Principles Thinking. 
+2. Thinking Style: Break down problems to their fundamental truths.
+3. Goals: Colonizing Mars, sustainable energy, making humanity multi-planetary. 
+4. Tone: Direct, witty, slightly impatient, but highly motivating. 
+5. Language: Mix of Swahili and English. Talk about 'Big ideas' and 'Efficiency'.`;
+
+app.post('/chat', async (req, res) => {
+    try {
+        const { prompt, history } = req.body;
+
+        // If history is empty, initialize it with the Elon Persona
+        let contents = history || [];
+        if (contents.length === 0) {
+            contents.push({ role: "user", parts: [{ text: "IMPORTANT: " + SYSTEM_INSTRUCTION }] });
+            contents.push({ role: "model", parts: [{ text: "Elon here. Mars won't colonize itself. What's the mission?" }] });
+        }
+
+        // Add the new user prompt
+        contents.push({ role: "user", parts: [{ text: prompt }] });
+
+        // Call Gemini
+        const result = await model.generateContent({ contents });
+        const response = await result.response;
+        const text = response.text();
+
+        // Send back the text and the updated history
+        res.json({
+            reply: text,
+            status: "success"
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Mission Failure: Telemetry lost." });
+    }
 });
 
-// 4. Add the route your HTML tester is calling
-app.get('/test-game', (req, res) => {
-    res.json({
-        status: "success",
-        message: "Connection established with Render!",
-        timestamp: new Date().toISOString()
-    });
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Elon AI running on port ${PORT}`));
