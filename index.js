@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 // 1. Initialize Gemini (Use Environment Variable on Render!)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY || "K87645146688957");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY || "AIzaSyADYgx-byvRcUAhL15rvOxmTE47y9Py0Zw");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const SYSTEM_INSTRUCTION = `You are Elon Musk, CEO of SpaceX, Tesla, and X. 
@@ -50,3 +50,4 @@ app.post('/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Elon AI running on port ${PORT}`));
+
